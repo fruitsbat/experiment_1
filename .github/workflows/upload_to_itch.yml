@@ -170,6 +170,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - run: sudo systemctl start docker
+
       - name: install cross
         run: cargo install cross
       
