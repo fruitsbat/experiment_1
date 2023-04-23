@@ -18,6 +18,9 @@ jobs:
       - name: build x86 release
         run: cargo build --release
 
+      - name: rename file
+        run: mv target/release/experiment_1 ~/linux_x86
+
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
@@ -25,17 +28,16 @@ jobs:
           CHANNEL: linux_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: target/release/experiment_1
+          PACKAGE: ~/linux_x86
+
   build-windows:
     name: build release binary for windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
-      - run: tree
       - name: build binary
         run: cargo build --release
-      - run: tree
       - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -54,6 +56,9 @@ jobs:
         with:
           name: windows_x86
 
+      - name: rename file
+        run: mv experiment_1.exe windows_x86.exe
+
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
@@ -61,7 +66,7 @@ jobs:
           CHANNEL: windows_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: experiment_1.exe
+          PACKAGE: windows_x86.exe
       - name: delete binary after upload
         uses: geekyeggo/delete-artifact@v1
         with:
@@ -79,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: mac_x86
-          path: target/universal/experiment_1
+          path: target/release/experiment_1
 
   build-mac-arm:
     name: build binary for macos on arm
