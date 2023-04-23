@@ -13,13 +13,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: install bevy dependencies
-        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64 wine wine64
+        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64 wine wine64 pkg-config-arm
 
         # install targets
       - name: install linux aarch64 target
         run: rustup target add aarch64-unknown-linux-musl
 
+      - name: install linux armv7 target
+        run: sudo apt-get install -qq gcc-arm-linux-gnueabihf
+        run: rustup target addi armv7-unknown-linux-gnueabihf
+
       - name: install linux x86 target
+        run: sudo apt-get install -qq gcc-arm-linux-aarch64
         run: rustup target add x86_64-unknown-linux-musl
 
       - name: install windows 64bit target
