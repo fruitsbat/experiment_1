@@ -13,7 +13,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: install bevy dependencies
-        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64 mingw-w32
+        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64
 
         # cross
       - name: start docker for cross
