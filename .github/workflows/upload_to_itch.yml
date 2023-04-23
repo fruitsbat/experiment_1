@@ -92,7 +92,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: mac_x86
-          path: ~/
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
@@ -101,7 +100,7 @@ jobs:
           CHANNEL: mac_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: ~/experiment_1
+          PACKAGE: experiment_1
       - name: delete binary after upload
         uses: geekyeggo/delete-artifact@v1
         with:
