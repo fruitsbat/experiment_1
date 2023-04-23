@@ -9,7 +9,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: install dependencies
-        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64
+      - name: install linux target
+        run: rustup target add x86_64-unknown-linux-musl
+      - name: install windows target
+        run: rustup target add x86_64-pc-windows-msvc
+      - name: install windows 32bit
+        run: rustup target add i686-pc-windows-msvc
       - uses: Swatinem/rust-cache@v2
-      - name: build binary
-        run: cargo build --release --target x86_64-unknown-linux-gnu
+      - name: build windows binary
+        run: cargo build --release --target x86_64-pc-windows-msvc
+      - name: build binary for linux x86
+        run: cargo build --release --target x86_64-unknown-linux-musl
