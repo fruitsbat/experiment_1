@@ -39,7 +39,7 @@ jobs:
       - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: windows_x86
+          name: windows_x86.exe
           path: target\release\experiment_1.exe
 
   upload-windows:
@@ -52,7 +52,7 @@ jobs:
       - name: download release file
         uses: actions/download-artifact@v3
         with:
-          name: windows_x86
+          name: windows_x86.exe
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
@@ -61,11 +61,11 @@ jobs:
           CHANNEL: windows_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: windows_x86
+          PACKAGE: windows_x86.exe
       - name: delete binary after upload
         uses: geekyeggo/delete-artifact@v1
         with:
-          name: windows_x86
+          name: windows_x86.exe
 
   build-mac:
     name: build binary for macos
