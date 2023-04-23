@@ -19,6 +19,9 @@ jobs:
       - name: install linux x86 target
         run: rustup target add x86_64-unknown-linux-musl
 
+      - name: set pkg config var
+        run: export PKG_CONFIG_ALLOW_CROSS=1
+
         # build binaries
       - name: build binary for linux x86
         run: cargo build --release --target x86_64-unknown-linux-musl
