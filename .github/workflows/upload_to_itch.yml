@@ -67,8 +67,22 @@ jobs:
         with:
           name: windows_x86
 
-  build-mac:
+  build-mac-x86:
     name: build binary for macos
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: build x86 binary
+        run: cargo build --release
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac_x86
+          path: target/universal/experiment_1
+
+  build-mac-arm:
+    name: build binary for macos on arm
     runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
@@ -77,19 +91,50 @@ jobs:
         run: rustup target add aarch64-apple-darwin
       - name: build arm binary
         run: SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) cargo build --target=aarch64-apple-darwin --release
-      - name: build x86 binary
-        run: cargo build --release
-      - name: run lipo to create universal binary
-        run: lipo -create -output target/universal/experiment_1 target/aarch64-apple-darwin/release/experiment_1 target/release/experiment_1
       - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: mac_x86
-          path: target/universal/experiment_1
+          name: mac_arm
+          path: target/aarch64-apple-darwin/release/experiment_1
 
+  merge-mac:
+    name: merge mac binaries
+    needs: build-mac-arm build-mac-x86
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - name: download x86 release file
+        uses: actions/download-artifact@v3
+        with:
+          name: mac_x86
+          path: ~/x86
+      - name: download arm release file
+        uses: actions/download-artifact@v3
+        with:
+          name: mac_arm
+          path: ~/arm
+      - name: run lipo to create universal binary
+        run: lipo -create -output ~/mac_universal ~/arm/experiment_1 ~/x86/experiment_1
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac_universal
+          path: ~/mac_universal
+
+      # cleanup
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: mac_arm
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: mac_x86
+    
+  
   upload-mac:
     name: upload macos binary to itch
-    needs: build-mac
+    needs: merge-mac
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -97,17 +142,17 @@ jobs:
       - name: download release file
         uses: actions/download-artifact@v3
         with:
-          name: mac_x86
+          name: mac_universal
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: mac_x86
+          CHANNEL: mac_universal
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: experiment_1
+          PACKAGE: mac_universal
       - name: delete binary after upload
         uses: geekyeggo/delete-artifact@v1
         with:
-          name: mac_x86
+          name: mac_universal
