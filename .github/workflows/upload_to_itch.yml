@@ -12,6 +12,9 @@ jobs:
       - name: install dependencies
         run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64
 
+        # cache
+      - uses: Swatinem/rust-cache@v2
+
         # install targets
       - name: install linux x86 target
         run: rustup target add x86_64-unknown-linux-musl
@@ -22,16 +25,10 @@ jobs:
       - name: install windows 32bit target
         run: rustup target add i686-pc-windows-gnu
 
-      - name: install windows armv8 target
-        run: rustup target add aarch64-pc-windows-gnu
-
-      # cache
-      - uses: Swatinem/rust-cache@v2
+        # build binaries
       - name: build windows 64bit binary
         run: cargo build --release --target x86_64-pc-windows-gnu
       - name: build binary for linux x86
         run: cargo build --release --target x86_64-unknown-linux-musl
       - name: build windows 32bit binary
         run: cargo build --release --target i686-pc-windows-gnu
-      - name: build windows arm binary
-        run: cargo build --release --target aarch64-pc-windows-gnu
