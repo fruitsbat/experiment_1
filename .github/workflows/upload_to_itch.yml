@@ -1,0 +1,28 @@
+name: Deploy
+
+on: push
+jobs:
+  deploy:
+    name: upload linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    runs-on: ubuntu-latest
+    name: upload to itch
+    steps:
+      - name: install dependencies
+        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - name: build binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+      - uses: actions/download-artifact@v2.0.8
+        with:
+          name: download artifact
+          path: target/x86_64-unknown-linux-gnu/release/experiment_1
+      - uses: KikimoraGames/itch-publish@v0.0.3
+        with:
+          butlerApiKey: ${{secrets.BUTLER_API_KEY}}
+          gameData: ./build/${{ matrix.template }}
+          itchUsername: ${{env.ITCH_USERNAME}}
+          itchGameId: ${{ env.ITCH_GAME_ID }}
+          buildChannel: ${{ matrix.channel }}
+          buildNumber: ${{ needs.version.outputs.version_hash }}
