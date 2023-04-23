@@ -171,7 +171,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: add architecture
-        run: dpkg --add-architecture arm64
+        run: sudo dpkg --add-architecture arm64
 
       - name: 
         run: sudo apt-get install g++-aarch64-linux-gnu pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
