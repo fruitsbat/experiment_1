@@ -167,8 +167,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - uses: Swatinem/rust-cache@v2
-      - name: install cross
-        run: cargo install cross
+
+      - name: add architecture
+        run: dpkg --add-architecture arm64
+
+      - name: 
+        run: sudo apt-get install g++-aarch64-linux-gnu pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+
+      - name: install toolchain
+        run: rustup target add aarch64-unknown-linux-gnu
+
       - name: build binary
-        run: cross build --release --target aarch64-unknown-linux-gnu
+        run: cargo build --release --target aarch64-unknown-linux-gnu
