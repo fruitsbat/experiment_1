@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: windows_x86
-          path: target/release/experiment_1
+          path: target\release\experiment_1
 
   upload-windows:
     name: upload windows binary to itch
