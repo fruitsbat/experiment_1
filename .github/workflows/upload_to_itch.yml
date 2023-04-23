@@ -73,13 +73,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
-      - name: build binary
+      - name: add arm target
+        run: rustup target add aarch64-apple-darwin
+      - name: build arm binary
+        run: SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) cargo build --target=aarch64-apple-darwin --release
+      - name: build x86 binary
         run: cargo build --release
+      - name: run lipo to create universal binary
+        run: lipo -create -output target/universal/experiment_1 target/aarch64-apple-darwin/release/experiment_1 target/release/experiment_1
       - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: mac_x86
-          path: target/release/experiment_1
+          path: target/universal/experiment_1
 
   upload-mac:
     name: upload macos binary to itch
