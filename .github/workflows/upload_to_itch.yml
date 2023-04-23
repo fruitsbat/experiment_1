@@ -161,17 +161,3 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: mac_universal
-
-  build-linux-aarch64:
-    name: build for linux aarch64
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: Swatinem/rust-cache@v2
-      - uses: pguyot/arm-runner-action@v2
-        with:
-          commands: |
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain nightly -y
-      
-
