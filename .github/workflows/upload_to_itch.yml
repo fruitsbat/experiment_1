@@ -32,7 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
-      - name: add rust target
       - name: build binary
         run: cargo build --release
       - name: upload to itch.io
