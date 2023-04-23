@@ -32,10 +32,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
+      - name: install bevy dependencies
+        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
       - name: install xwin
         run: cargo install xwin
       - name: run xwin
-        run: xwin --accept-license splat --output /xwin
+        run: xwin --accept-license splat --output ./xwin
+      - name: move xwin to root
+        run: sudo mv ./xwin /xwin
       - name: add rust target
         run: rustup target add x86_64-pc-windows-msvc
       - name: build
