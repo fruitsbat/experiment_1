@@ -19,7 +19,7 @@ jobs:
         run: cargo build --release
 
       - name: rename file
-        run: mv target/release/experiment_1 ./linux_x86
+        run: mv target/release/experiment ./linux_x86
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: mac_x86
-          path: target/release/experiment_1
+          path: target/release/experiment
 
   build-mac-arm:
     name: build binary for macos on arm
@@ -100,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: mac_arm
-          path: target/aarch64-apple-darwin/release/experiment_1
+          path: target/aarch64-apple-darwin/release/experiment
 
   merge-mac:
     name: merge mac binaries
@@ -119,7 +119,7 @@ jobs:
           name: mac_arm
           path: ~/arm
       - name: run lipo to create universal binary
-        run: lipo -create -output ~/mac_universal ~/arm/experiment_1 ~/x86/experiment_1
+        run: lipo -create -output ~/mac_universal ~/arm/experiment ~/x86/experiment
       - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
