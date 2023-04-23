@@ -5,9 +5,6 @@ jobs:
   deploy:
     name: upload linux
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-    runs-on: ubuntu-latest
 
     steps:
       - name: install dependencies
