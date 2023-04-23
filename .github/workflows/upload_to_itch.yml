@@ -64,3 +64,42 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: windows_x86
+
+  build-mac:
+    name: build binary for macos
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: build binary
+        run: cargo build --release
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac_x86
+          path: target/release/experiment_1
+
+  upload-mac:
+    name: upload macos binary to itch
+    needs: build-mac
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: mac_x86
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: mac_x86
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: mac_x86
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: mac_x86
