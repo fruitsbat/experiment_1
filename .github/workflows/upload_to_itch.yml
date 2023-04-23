@@ -60,3 +60,7 @@ jobs:
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
           PACKAGE: windows_x86
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: windows_x86
