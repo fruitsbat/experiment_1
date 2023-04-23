@@ -1,4 +1,4 @@
-name: Deploy
+name: CI
 
 on: push
 jobs:
@@ -27,18 +27,36 @@ jobs:
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
           PACKAGE: target/release/experiment_1
   build-windows:
-    name: upload windows to itch
+    name: build release binary for windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
       - name: build binary
         run: cargo build --release
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows_x86
+          path: target/release/experiment_1
+
+  upload-windows:
+    name: upload windows binary to itch
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_x86
+
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: windows_64bit
+          CHANNEL: windows_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: target/release/experiment_1
+          PACKAGE: windows_x86
