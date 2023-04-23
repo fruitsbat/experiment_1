@@ -19,7 +19,7 @@ jobs:
         run: cargo build --release
 
       - name: rename file
-        run: mv target/release/experiment_1 ~/linux_x86
+        run: mv target/release/experiment_1 ./linux_x86
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
@@ -28,7 +28,7 @@ jobs:
           CHANNEL: linux_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: ~/linux_x86
+          PACKAGE: linux_x86
 
   build-windows:
     name: build release binary for windows
