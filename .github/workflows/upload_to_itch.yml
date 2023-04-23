@@ -32,13 +32,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
+      - run: tree
       - name: build binary
         run: cargo build --release
+      - run: tree
       - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: windows_x86
-          path: target\release\experiment_1
+          path: target\release\experiment_1.exe
 
   upload-windows:
     name: upload windows binary to itch
