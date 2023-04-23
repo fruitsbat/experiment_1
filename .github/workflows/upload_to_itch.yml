@@ -26,3 +26,25 @@ jobs:
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
           PACKAGE: target/release/experiment_1
+  build-windows:
+    name: upload windows to itch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: install xwin
+        run: cargo install xwin
+      - name: run xwin
+        run: xwin --accept-license splat --output /xwin
+      - name: add rust target
+        run: rustup target add x86_64-pc-windows-msvc
+      - name: build
+        run: cargo build --target x86_64-pc-windows-msvc --release
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: windows_64bit
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: target/x86_64-pc-windows-msvc/release/experiment_1
