@@ -15,11 +15,8 @@ jobs:
       - name: install bevy dependencies
         run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
 
-      - name: install cross
-        run: cargo install cross
-
       - name: build x86 release
-        run: cross build --target x86_64-unknown-linux-musl --release
+        run: cargo build --release
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
@@ -28,4 +25,4 @@ jobs:
           CHANNEL: linux_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: target/x86_64-unknown-linux-gnu/release/experiment_1
+          PACKAGE: target/release/experiment_1
