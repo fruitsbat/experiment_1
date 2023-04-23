@@ -28,22 +28,13 @@ jobs:
           PACKAGE: target/release/experiment_1
   build-windows:
     name: upload windows to itch
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
-      - name: install bevy dependencies
-        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
-      - name: install xwin
-        run: cargo install xwin
-      - name: run xwin
-        run: xwin --accept-license splat --output ./xwin
-      - name: move xwin to root
-        run: sudo mv ./xwin /xwin
       - name: add rust target
-        run: rustup target add x86_64-pc-windows-msvc
-      - name: build
-        run: cargo build --target x86_64-pc-windows-msvc --release
+      - name: build binary
+        run: cargo build --release
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
@@ -51,4 +42,4 @@ jobs:
           CHANNEL: windows_64bit
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: target/x86_64-pc-windows-msvc/release/experiment_1
+          PACKAGE: target/release/experiment_1
