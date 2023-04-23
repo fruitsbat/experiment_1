@@ -93,6 +93,7 @@ jobs:
         with:
           name: mac_x86
           path: ~/
+      - run: ls ~/
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
