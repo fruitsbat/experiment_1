@@ -2,18 +2,25 @@ name: Deploy
 
 on: push
 jobs:
-  deploy:
-    name: upload to itch
+  build-linux:
+    name: upload linux to itch
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: install dependencies
-        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64
-
         # cache
       - uses: Swatinem/rust-cache@v2
+
+      - name: install bevy dependencies
+        run: sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mingw-w64 mingw-w32
+
+        # cross
+      - name: start docker for cross
+        run: sudo systemctl start docker
+
+      - name: install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
 
         # install targets
       - name: install linux x86 target
@@ -26,6 +33,8 @@ jobs:
         run: rustup target add i686-pc-windows-gnu
 
         # build binaries
+      - name: build linux aarch64 binary
+        run: cross build --release --target aarch64-unknown-linux-musl
       - name: build windows 64bit binary
         run: cargo build --release --target x86_64-pc-windows-gnu
       - name: build binary for linux x86
