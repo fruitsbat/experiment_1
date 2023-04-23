@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: windows_x86
-          path: target\release\experiment_1.exe
+          path: target\release\experiment.exe
 
   upload-windows:
     name: upload windows binary to itch
@@ -57,7 +57,7 @@ jobs:
           name: windows_x86
 
       - name: rename file
-        run: mv experiment_1.exe windows_x86.exe
+        run: mv experiment.exe windows_x86.exe
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
