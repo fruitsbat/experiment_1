@@ -1,26 +1,47 @@
 use bevy::{input::common_conditions::input_toggle_active, prelude::*};
+use bevy_embedded_assets::EmbeddedAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 
+pub mod animation;
+mod camera;
 mod input;
-mod player;
+pub mod player;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugins(
+            DefaultPlugins
+                .build()
+                .set(ImagePlugin::default_nearest())
+                .add_before::<bevy::asset::AssetPlugin, _>(EmbeddedAssetPlugin),
+        )
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(32.0))
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(input::InputPlugin)
         .add_plugin(
             WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::F11)),
         )
         .add_plugin(player::PlayerPlugin)
-        .add_startup_systems((setup_graphics, setup_physics))
+        .add_plugin(camera::CameraPlugin)
+        .add_plugin(animation::AnimationPlugin)
+        .add_startup_systems((setup_physics, spawn_some_text))
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
-    commands.spawn(Camera2dBundle { ..default() });
+fn spawn_some_text(mut commands: Commands, assets: Res<AssetServer>) {
+    let font = assets.load("fonts/atkinson.ttf");
+    commands.spawn((Text2dBundle {
+        text: Text::from_section(
+            "hehe",
+            TextStyle {
+                font_size: 60.,
+                font,
+                ..default()
+            },
+        ),
+        ..default()
+    },));
 }
 
 fn setup_physics(mut commands: Commands) {

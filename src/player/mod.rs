@@ -1,4 +1,7 @@
-use crate::input;
+use crate::{
+    animation::{Frames, SpriteAnimation},
+    input,
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -13,7 +16,7 @@ impl Plugin for PlayerPlugin {
 }
 
 #[derive(Debug, Component)]
-struct Player;
+pub struct Player;
 
 fn update_system(
     mut controllers: Query<(
@@ -39,18 +42,39 @@ fn update_system(
     }
 }
 
-fn init_player(mut commands: Commands) {
-    commands.spawn((
-        Collider::capsule_y(20., 16.),
-        TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
-        KinematicCharacterController {
-            apply_impulse_to_dynamic_bodies: true,
-            custom_mass: Some(1000.),
-            ..Default::default()
-        },
-        input::player_input(),
-        Player,
-    ));
+fn init_player(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let image = assets.load("sprites/player.png");
+    let atlas = TextureAtlas::from_grid(
+        image,
+        Vec2::new(32., 32.),
+        5,
+        1,
+        None,
+        Some(Vec2::new(0., 32.)),
+    );
+    let atlas_handle = texture_atlases.add(atlas);
+    commands
+        .spawn((
+            Name::new("player"),
+            SpriteAnimation::new(Frames::Constant(5, 0.06), 2, true),
+            Collider::capsule_y(10.0, 4.0),
+            TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
+            KinematicCharacterController {
+                apply_impulse_to_dynamic_bodies: true,
+                custom_mass: Some(1000.),
+                ..Default::default()
+            },
+            input::player_input(),
+            Player,
+        ))
+        .insert(SpriteSheetBundle {
+            texture_atlas: atlas_handle,
+            ..default()
+        });
 }
 
 fn kick_objects(
