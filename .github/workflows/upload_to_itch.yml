@@ -170,23 +170,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: install ggc for aarch64
-        run: sudo apt-get install gcc-aarch64-linux-gnu
-
-      - name: add rust target
-        run: rustup target add aarch64-unknown-linux-gnu
-
-      - name: install nix
-        uses: cachix/install-nix-action@v20
+      - uses: uraimo/run-on-arch-action@v2
+        name: run commands
+        id: runcmd
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - name: enter nix shell
-        run: nix-shell aarch64-unknown-linux-gnu.nix
-
-      - name: build release
-        run: cargo build --release --target aarch64-unknown-linux-gnu
-      
+          arch: aarch64A
+          distro: ubuntu20.04
+          run: |
+            echo "installing dependencies"
+            sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+            echo "installing rust"
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            cargo build --release
