@@ -23,16 +23,16 @@ jobs:
             rustup target add x86_64-unknown-linux-musl
             cargo build --release --target x86_64-unknown-linux-musl
       - name: rename file
-        run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_x86
+        run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_musl_x86
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: linux_x86
+          CHANNEL: linux_musl_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: linux_x86
+          PACKAGE: linux_musl_x86
 
   build-windows:
     name: build release binary for windows
@@ -270,7 +270,7 @@ jobs:
         uses: manleydev/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: linux_aarch64
+          CHANNEL: linux_musl_aarch64
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
           PACKAGE: artifacts/linux_musl_aarch64
