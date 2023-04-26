@@ -24,7 +24,7 @@ jobs:
             cargo build --release --target x86_64-unknown-linux-musl
 
       - name: rename file
-        run: mv target/release/experiment ./linux_x86
+        run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_x86
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
