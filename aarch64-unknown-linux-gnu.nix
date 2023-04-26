@@ -4,12 +4,7 @@ let
   };
 in pkgs.callPackage ({ mkShell, pkg-config, zlib }:
   mkShell {
-    nativeBuildInputs = with pkgs; [
-      pkg-config
-      llvmPackages_latest.llvm
-      clang
-      llvmPackages.bintools
-    ]; # you build dependencies here
+    nativeBuildInputs = [ pkg-config ]; # you build dependencies here
     buildInputs = with pkgs; [
       udev
       alsa-lib

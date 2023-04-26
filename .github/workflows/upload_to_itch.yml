@@ -173,6 +173,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: install ggc for aarch64
+        run: sudo apt-get install gcc-aarch64-linux-gnu
+
       - name: add rust target
         run: rustup target add aarch64-unknown-linux-gnu
 
