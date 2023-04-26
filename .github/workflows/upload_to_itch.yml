@@ -204,7 +204,7 @@ jobs:
           PACKAGE: artifacts/linux_aarch64
 
   build-linux-aarch64-musl:
-    name: build for linux on aarch64
+    name: build for linux on aarch64 musl
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
