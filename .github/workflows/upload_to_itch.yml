@@ -21,9 +21,7 @@ jobs:
             curl https://sh.rustup.rs -sSf | sh -s -- -y
             source "$HOME/.cargo/env"
             rustup target add aarch64-unknown-linux-musl
-
-      - name: build x86 release
-        run: cargo build --release --target aarch64-unknown-linux-musl
+            cargo build --release --target aarch64-unknown-linux-musl
 
       - name: rename file
         run: mv target/release/experiment ./linux_x86
