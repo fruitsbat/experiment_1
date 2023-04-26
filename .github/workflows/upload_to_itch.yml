@@ -64,9 +64,26 @@ jobs:
           name: windows_aarch64
           path: target\aarch64-pc-windows-msvc\release\windows_aarch64.exe
 
+  build-windows-i686:
+    name: build release binary for windows on arm
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: add target
+        run: rustup target add i686-pc-windows-msvc
+      - name: build binary
+        run: cargo build --release --target i686-pc-windows-msvc
+      - run: ren target\i686-pc-windows-msvc\release\experiment.exe windows_i686.exe
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows_i686
+          path: target\i686-pc-windows-msvc\release\windows_i686.exe
+
   upload-windows:
     name: upload windows binary to itch
-    needs: [ build-windows, build-windows-arm  ]
+    needs: [ build-windows, build-windows-arm, build-windows-i686  ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -80,6 +97,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: windows_aarch64
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_i686
 
       - name: rename file
         run: mv experiment.exe windows_x86.exe
@@ -112,6 +134,20 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: windows_aarch64
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: windows_i686
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: windows_i686.exe
+
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: windows_i686
 
   build-mac-x86:
     name: build binary for macos
