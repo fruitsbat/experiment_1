@@ -249,7 +249,7 @@ jobs:
         id: runcmd
         with:
           arch: aarch64
-          distro: bullseye
+          distro: alpine_latest
           setup: |
             mkdir -p "${PWD}/artifacts"
 
@@ -257,16 +257,15 @@ jobs:
             --volume "${PWD}/artifacts:/artifacts"
 
           install: |
-            echo "installing dependencies"
-            apt update
-            apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev curl
-            echo "installing rust"
+            apk update
+            apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
             curl https://sh.rustup.rs -sSf | sh -s -- -y
+            rustup target add aarch64-unknown-linux-musl
             
           run: |
             source "$HOME/.cargo/env"
-            cargo build --release
-            cp target/release/experiment /artifacts/linux_aarch64
+            cargo build --release --target aarch64-unknown-linux-musl
+            cp target/aarch64-unknown-linux-musl/release/experiment /artifacts/linux_aarch64
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
