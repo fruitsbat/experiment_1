@@ -167,7 +167,7 @@ jobs:
 
   build-linux-aarch64:
     name: build for linux on aarch64
-    runs-on: bullseye
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2
