@@ -175,10 +175,11 @@ jobs:
         id: runcmd
         with:
           arch: aarch64
-          distro: archarm_latest
+          distro: bullseye
           run: |
             echo "installing dependencies"
-            pacman -S libx11 pkgconf alsa-lib
+            apt update
+            apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
             echo "installing rust"
             curl https://sh.rustup.rs -sSf | sh -s -- -y
             cargo build --release
