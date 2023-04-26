@@ -8,18 +8,22 @@ jobs:
   build-linux:
     name: upload linux to itch
     runs-on: ubuntu-22.04
+    container: alpine:latest
 
     steps:
       - uses: actions/checkout@v3
 
-        # cache
       - uses: Swatinem/rust-cache@v2
 
-      - name: install bevy dependencies
-        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - run: |
+            apk update
+            apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            source "$HOME/.cargo/env"
+            rustup target add aarch64-unknown-linux-musl
 
       - name: build x86 release
-        run: cargo build --release
+        run: cargo build --release --target aarch64-unknown-linux-musl
 
       - name: rename file
         run: mv target/release/experiment ./linux_x86
