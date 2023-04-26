@@ -20,8 +20,8 @@ jobs:
             apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
             curl https://sh.rustup.rs -sSf | sh -s -- -y
             source "$HOME/.cargo/env"
-            rustup target add aarch64-unknown-linux-musl
-            cargo build --release --target aarch64-unknown-linux-musl
+            rustup target add x86_64-unknown-linux-musl
+            cargo build --release --target x86_64-unknown-linux-musl
 
       - name: rename file
         run: mv target/release/experiment ./linux_x86
