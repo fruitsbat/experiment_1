@@ -4,342 +4,341 @@ on:
   push:
     branches:
       - main
-  jobs:
-    build-linux:
-      name: upload linux to itch
-      runs-on: ubuntu-22.04
-      container: alpine:latest
-  
-      steps:
-        - uses: actions/checkout@v3
-  
-        - uses: Swatinem/rust-cache@v2
-  
-        - run: |
-              apk update
-              apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
-              curl https://sh.rustup.rs -sSf | sh -s -- -y
-              source "$HOME/.cargo/env"
-              rustup target add x86_64-unknown-linux-musl
-              cargo build --release --target x86_64-unknown-linux-musl
-  
-        - name: rename file
-          run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_musl_x86
-  
-        - name: upload to itch.io
-          uses: manleydev/butler-publish-itchio-action@master
-          env:
-            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: linux_musl_x86
-            ITCH_GAME: ${{ vars.GAME_ID }}
-            ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: linux_musl_x86
-  
-    build-windows:
-      name: build release binary for windows
-      runs-on: windows-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: Swatinem/rust-cache@v2
-        - name: build binary
-          run: cargo build --release
-        - name: upload artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: windows_x86
-            path: target\release\experiment.exe
-  
-    build-windows-arm:
-      name: build release binary for windows on arm
-      runs-on: windows-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: Swatinem/rust-cache@v2
-        - name: add target
-          run: rustup target add aarch64-pc-windows-msvc
-        - name: build binary
-          run: cargo build --release --target aarch64-pc-windows-msvc
-        - run: ren target\aarch64-pc-windows-msvc\release\experiment.exe windows_aarch64.exe
-        - name: upload artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: windows_aarch64
-            path: target\aarch64-pc-windows-msvc\release\windows_aarch64.exe
-  
-    build-windows-i686:
-      name: build release binary for windows on arm
-      runs-on: windows-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: Swatinem/rust-cache@v2
-        - name: add target
-          run: rustup target add i686-pc-windows-msvc
-        - name: build binary
-          run: cargo build --release --target i686-pc-windows-msvc
-        - run: ren target\i686-pc-windows-msvc\release\experiment.exe windows_i686.exe
-        - name: upload artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: windows_i686
-            path: target\i686-pc-windows-msvc\release\windows_i686.exe
-  
-    upload-windows:
-      name: upload windows binary to itch
-      needs: [ build-windows, build-windows-arm, build-windows-i686  ]
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-  
-        - name: download release file
-          uses: actions/download-artifact@v3
-          with:
-            name: windows_x86
-  
-        - name: download release file
-          uses: actions/download-artifact@v3
-          with:
-            name: windows_aarch64
-  
-        - name: download release file
-          uses: actions/download-artifact@v3
-          with:
-            name: windows_i686
-  
-        - name: rename file
-          run: mv experiment.exe windows_x86.exe
-  
-        - name: upload to itch.io
-          uses: manleydev/butler-publish-itchio-action@master
-          env:
-            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: windows_x86
-            ITCH_GAME: ${{ vars.GAME_ID }}
-            ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: windows_x86.exe
-  
-        
-        - name: delete binary after upload
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: windows_x86
-  
-        - name: upload to itch.io
-          uses: manleydev/butler-publish-itchio-action@master
-          env:
-            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: windows_aarch64
-            ITCH_GAME: ${{ vars.GAME_ID }}
-            ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: windows_aarch64.exe
-  
-        - name: delete binary after upload
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: windows_aarch64
-  
-        - name: upload to itch.io
-          uses: manleydev/butler-publish-itchio-action@master
-          env:
-            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: windows_i686
-            ITCH_GAME: ${{ vars.GAME_ID }}
-            ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: windows_i686.exe
-  
-        - name: delete binary after upload
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: windows_i686
-  
-    build-mac-x86:
-      name: build binary for macos
-      runs-on: macos-12
-      steps:
-        - uses: actions/checkout@v3
-        - uses: Swatinem/rust-cache@v2
-        - name: build x86 binary
-          run: cargo build --release
-        - name: upload artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: mac_x86
-            path: target/release/experiment
-  
-    build-mac-arm:
-      name: build binary for macos on arm
-      runs-on: macos-12
-      steps:
-        - uses: actions/checkout@v3
-        - uses: Swatinem/rust-cache@v2
-        - name: add arm target
-          run: rustup target add aarch64-apple-darwin
-        - name: build arm binary
-          run: SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) cargo build --target=aarch64-apple-darwin --release
-        - name: upload artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: mac_arm
-            path: target/aarch64-apple-darwin/release/experiment
-  
-    merge-mac:
-      name: merge mac binaries
-      needs: [build-mac-arm, build-mac-x86]
-      runs-on: macos-12
-      steps:
-        - uses: actions/checkout@v3
-        - name: download x86 release file
-          uses: actions/download-artifact@v3
-          with:
-            name: mac_x86
-            path: ~/x86
-        - name: download arm release file
-          uses: actions/download-artifact@v3
-          with:
-            name: mac_arm
-            path: ~/arm
-        - name: run lipo to create universal binary
-          run: lipo -create -output ~/mac_universal ~/arm/experiment ~/x86/experiment
-        - name: upload artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: mac_universal
-            path: ~/mac_universal
-  
-        # cleanup
-        - name: delete binary after upload
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: mac_arm
-        - name: delete binary after upload
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: mac_x86
+jobs:
+  build-linux:
+    name: upload linux to itch
+    runs-on: ubuntu-22.04
+    container: alpine:latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: |
+            apk update
+            apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            source "$HOME/.cargo/env"
+            rustup target add x86_64-unknown-linux-musl
+            cargo build --release --target x86_64-unknown-linux-musl
+
+      - name: rename file
+        run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_musl_x86
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: linux_musl_x86
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: linux_musl_x86
+
+  build-windows:
+    name: build release binary for windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: build binary
+        run: cargo build --release
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows_x86
+          path: target\release\experiment.exe
+
+  build-windows-arm:
+    name: build release binary for windows on arm
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: add target
+        run: rustup target add aarch64-pc-windows-msvc
+      - name: build binary
+        run: cargo build --release --target aarch64-pc-windows-msvc
+      - run: ren target\aarch64-pc-windows-msvc\release\experiment.exe windows_aarch64.exe
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows_aarch64
+          path: target\aarch64-pc-windows-msvc\release\windows_aarch64.exe
+
+  build-windows-i686:
+    name: build release binary for windows on arm
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: add target
+        run: rustup target add i686-pc-windows-msvc
+      - name: build binary
+        run: cargo build --release --target i686-pc-windows-msvc
+      - run: ren target\i686-pc-windows-msvc\release\experiment.exe windows_i686.exe
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows_i686
+          path: target\i686-pc-windows-msvc\release\windows_i686.exe
+
+  upload-windows:
+    name: upload windows binary to itch
+    needs: [ build-windows, build-windows-arm, build-windows-i686  ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_x86
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_aarch64
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_i686
+
+      - name: rename file
+        run: mv experiment.exe windows_x86.exe
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: windows_x86
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: windows_x86.exe
+
       
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: windows_x86
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: windows_aarch64
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: windows_aarch64.exe
+
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: windows_aarch64
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: windows_i686
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: windows_i686.exe
+
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: windows_i686
+
+  build-mac-x86:
+    name: build binary for macos
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: build x86 binary
+        run: cargo build --release
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac_x86
+          path: target/release/experiment
+
+  build-mac-arm:
+    name: build binary for macos on arm
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - name: add arm target
+        run: rustup target add aarch64-apple-darwin
+      - name: build arm binary
+        run: SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) cargo build --target=aarch64-apple-darwin --release
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac_arm
+          path: target/aarch64-apple-darwin/release/experiment
+
+  merge-mac:
+    name: merge mac binaries
+    needs: [build-mac-arm, build-mac-x86]
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - name: download x86 release file
+        uses: actions/download-artifact@v3
+        with:
+          name: mac_x86
+          path: ~/x86
+      - name: download arm release file
+        uses: actions/download-artifact@v3
+        with:
+          name: mac_arm
+          path: ~/arm
+      - name: run lipo to create universal binary
+        run: lipo -create -output ~/mac_universal ~/arm/experiment ~/x86/experiment
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac_universal
+          path: ~/mac_universal
+
+      # cleanup
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: mac_arm
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: mac_x86
     
-    upload-mac:
-      name: upload macos binary to itch
-      needs: merge-mac
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
   
-        - name: download release file
-          uses: actions/download-artifact@v3
-          with:
-            name: mac_universal
-  
-        - name: upload to itch.io
-          uses: manleydev/butler-publish-itchio-action@master
-          env:
-            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: mac_universal
-            ITCH_GAME: ${{ vars.GAME_ID }}
-            ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: mac_universal
-        - name: delete binary after upload
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: mac_universal
-  
-    build-linux-aarch64:
-      name: build for linux on aarch64
+  upload-mac:
+    name: upload macos binary to itch
+    needs: merge-mac
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: download release file
+        uses: actions/download-artifact@v3
+        with:
+          name: mac_universal
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: mac_universal
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: mac_universal
+      - name: delete binary after upload
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: mac_universal
+
+  build-linux-aarch64:
+    name: build for linux on aarch64
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2
+        name: run commands
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: alpine_latest
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
+
+          install: |
+            apk update
+            apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            source "$HOME/.cargo/env"
+            rustup target add aarch64-unknown-linux-musl
+            
+          run: |
+            source "$HOME/.cargo/env"
+            cargo build --release --target aarch64-unknown-linux-musl
+            cp target/aarch64-unknown-linux-musl/release/experiment /artifacts/linux_musl_aarch64
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: linux_musl_aarch64
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: artifacts/linux_musl_aarch64
+
+  build-linux-gnu-aarch64:
+    name: build linux gnu aarch64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2
+        name: run commands
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: bullseye
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
+          install: |
+            echo "installing dependencies"
+            apt update
+            apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev curl
+            echo "installing rust"
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            
+          run: |
+            source "$HOME/.cargo/env"
+            cargo build --release
+            cp target/release/experiment /artifacts/linux_gnu_aarch64
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: linux_gnu_aarch64
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: artifacts/linux_gnu_aarch64
+
+    build-linux-gnu:
+      name: linux gnu x86
       runs-on: ubuntu-22.04
+  
       steps:
         - uses: actions/checkout@v3
-        - uses: uraimo/run-on-arch-action@v2
-          name: run commands
-          id: runcmd
-          with:
-            arch: aarch64
-            distro: alpine_latest
-            setup: |
-              mkdir -p "${PWD}/artifacts"
   
-            dockerRunArgs: |
-              --volume "${PWD}/artifacts:/artifacts"
+          # cache
+        - uses: Swatinem/rust-cache@v2
   
-            install: |
-              apk update
-              apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
-              curl https://sh.rustup.rs -sSf | sh -s -- -y
-              source "$HOME/.cargo/env"
-              rustup target add aarch64-unknown-linux-musl
-              
-            run: |
-              source "$HOME/.cargo/env"
-              cargo build --release --target aarch64-unknown-linux-musl
-              cp target/aarch64-unknown-linux-musl/release/experiment /artifacts/linux_musl_aarch64
+        - name: install bevy dependencies
+          run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+  
+        - name: build x86 release
+          run: cargo build --release
+  
+        - name: rename file
+          run: mv target/release/experiment ./linux_gnu_x86
   
         - name: upload to itch.io
           uses: manleydev/butler-publish-itchio-action@master
           env:
             BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: linux_musl_aarch64
+            CHANNEL: linux_gnu_x86
             ITCH_GAME: ${{ vars.GAME_ID }}
             ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: artifacts/linux_musl_aarch64
-  
-    build-linux-gnu-aarch64:
-      name: build linux gnu aarch64
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: uraimo/run-on-arch-action@v2
-          name: run commands
-          id: runcmd
-          with:
-            arch: aarch64
-            distro: bullseye
-            setup: |
-              mkdir -p "${PWD}/artifacts"
-            dockerRunArgs: |
-              --volume "${PWD}/artifacts:/artifacts"
-            install: |
-              echo "installing dependencies"
-              apt update
-              apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev curl
-              echo "installing rust"
-              curl https://sh.rustup.rs -sSf | sh -s -- -y
-              
-            run: |
-              source "$HOME/.cargo/env"
-              cargo build --release
-              cp target/release/experiment /artifacts/linux_gnu_aarch64
-  
-        - name: upload to itch.io
-          uses: manleydev/butler-publish-itchio-action@master
-          env:
-            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-            CHANNEL: linux_gnu_aarch64
-            ITCH_GAME: ${{ vars.GAME_ID }}
-            ITCH_USER: ${{ vars.ITCH_USERNAME }}
-            PACKAGE: artifacts/linux_gnu_aarch64
-  
-    jobs:
-      build-linux-gnu:
-        name: linux gnu x86
-        runs-on: ubuntu-22.04
-    
-        steps:
-          - uses: actions/checkout@v3
-    
-            # cache
-          - uses: Swatinem/rust-cache@v2
-    
-          - name: install bevy dependencies
-            run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
-    
-          - name: build x86 release
-            run: cargo build --release
-    
-          - name: rename file
-            run: mv target/release/experiment ./linux_gnu_x86
-    
-          - name: upload to itch.io
-            uses: manleydev/butler-publish-itchio-action@master
-            env:
-              BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-              CHANNEL: linux_gnu_x86
-              ITCH_GAME: ${{ vars.GAME_ID }}
-              ITCH_USER: ${{ vars.ITCH_USERNAME }}
-              PACKAGE: linux_gnu_x86
+            PACKAGE: linux_gnu_x86
