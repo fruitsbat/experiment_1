@@ -24,16 +24,16 @@ jobs:
             cargo build --release --target x86_64-unknown-linux-musl
 
       - name: rename file
-        run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_x86
+        run: mv target/x86_64-unknown-linux-musl/release/experiment ./linux_musl_x86
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: linux_x86
+          CHANNEL: linux_musl_x86
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: linux_x86
+          PACKAGE: linux_musl_x86
 
   build-windows:
     name: build release binary for windows
@@ -268,13 +268,78 @@ jobs:
           run: |
             source "$HOME/.cargo/env"
             cargo build --release --target aarch64-unknown-linux-musl
-            cp target/aarch64-unknown-linux-musl/release/experiment /artifacts/linux_aarch64
+            cp target/aarch64-unknown-linux-musl/release/experiment /artifacts/linux_musl_aarch64
 
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: linux_aarch64
+          CHANNEL: linux_musl_aarch64
           ITCH_GAME: ${{ vars.GAME_ID }}
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: artifacts/linux_aarch64
+          PACKAGE: artifacts/linux_musl_aarch64
+
+  build-linux-gnu-aarch64:
+    name: build linux gnu aarch64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2
+        name: run commands
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: bullseye
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
+          install: |
+            echo "installing dependencies"
+            apt update
+            apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev curl
+            echo "installing rust"
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            
+          run: |
+            source "$HOME/.cargo/env"
+            cargo build --release
+            cp target/release/experiment /artifacts/linux_gnu_aarch64
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: linux_gnu_aarch64
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: artifacts/linux_gnu_aarch64
+
+  jobs:
+    build-linux-gnu:
+      name: linux gnu x86
+      runs-on: ubuntu-22.04
+  
+      steps:
+        - uses: actions/checkout@v3
+  
+          # cache
+        - uses: Swatinem/rust-cache@v2
+  
+        - name: install bevy dependencies
+          run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+  
+        - name: build x86 release
+          run: cargo build --release
+  
+        - name: rename file
+          run: mv target/release/experiment ./linux_gnu_x86
+  
+        - name: upload to itch.io
+          uses: manleydev/butler-publish-itchio-action@master
+          env:
+            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+            CHANNEL: linux_gnu_x86
+            ITCH_GAME: ${{ vars.GAME_ID }}
+            ITCH_USER: ${{ vars.ITCH_USERNAME }}
+            PACKAGE: linux_gnu_x86
