@@ -260,6 +260,7 @@ jobs:
             apk update
             apk add gcc libc-dev pkgconf libx11-dev alsa-lib-dev eudev-dev curl
             curl https://sh.rustup.rs -sSf | sh -s -- -y
+            source "$HOME/.cargo/env"
             rustup target add aarch64-unknown-linux-musl
             
           run: |
