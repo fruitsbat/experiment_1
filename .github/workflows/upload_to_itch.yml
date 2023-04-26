@@ -176,10 +176,29 @@ jobs:
         with:
           arch: aarch64
           distro: ubuntu22.04
-          run: |
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
+
+          install: |
             echo "installing dependencies"
             apt update
             apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev curl
             echo "installing rust"
             curl https://sh.rustup.rs -sSf | sh -s -- -y
+            
+          run: |
+            source "$HOME/.cargo/env"
             cargo build --release
+            cp target/release/experiment /artifacts/linux_aarch64
+
+      - name: upload to itch.io
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: linux_aarch64
+          ITCH_GAME: ${{ vars.GAME_ID }}
+          ITCH_USER: ${{ vars.ITCH_USERNAME }}
+          PACKAGE: artifacts/linux_aarch64
