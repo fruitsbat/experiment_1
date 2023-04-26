@@ -310,30 +310,30 @@ jobs:
           ITCH_USER: ${{ vars.ITCH_USERNAME }}
           PACKAGE: artifacts/linux_gnu_aarch64
 
-build-gnu-linux:
-    name: upload linux to itch
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-        # cache
-      - uses: Swatinem/rust-cache@v2
-
-      - name: install bevy dependencies
-        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
-
-      - name: build x86 release
-        run: cargo build --release
-
-      - name: rename file
-        run: mv target/release/experiment ./linux_gnu_x86
-
-      - name: upload to itch.io
-        uses: manleydev/butler-publish-itchio-action@master
-        env:
-          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: linux_gnu_x86
-          ITCH_GAME: ${{ vars.GAME_ID }}
-          ITCH_USER: ${{ vars.ITCH_USERNAME }}
-          PACKAGE: linux_gnu_x86
+  build-gnu-linux:
+      name: upload linux to itch
+      runs-on: ubuntu-latest
+  
+      steps:
+        - uses: actions/checkout@v3
+  
+          # cache
+        - uses: Swatinem/rust-cache@v2
+  
+        - name: install bevy dependencies
+          run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+  
+        - name: build x86 release
+          run: cargo build --release
+  
+        - name: rename file
+          run: mv target/release/experiment ./linux_gnu_x86
+  
+        - name: upload to itch.io
+          uses: manleydev/butler-publish-itchio-action@master
+          env:
+            BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+            CHANNEL: linux_gnu_x86
+            ITCH_GAME: ${{ vars.GAME_ID }}
+            ITCH_USER: ${{ vars.ITCH_USERNAME }}
+            PACKAGE: linux_gnu_x86
