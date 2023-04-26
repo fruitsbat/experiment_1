@@ -175,11 +175,11 @@ jobs:
         id: runcmd
         with:
           arch: aarch64
-          distro: bullseye
+          distro: ubuntu22.04
           run: |
             echo "installing dependencies"
             apt update
-            apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+            apt install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev curl
             echo "installing rust"
             curl https://sh.rustup.rs -sSf | sh -s -- -y
             cargo build --release
