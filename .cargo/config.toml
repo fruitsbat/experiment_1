@@ -4,3 +4,6 @@ rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zshare-generics=y"]
 
 [target.aarch64-unknown-linux-gnu]
 linker = "cc"
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-Ctarget-feature=+crt-static"]
