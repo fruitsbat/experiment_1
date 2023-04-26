@@ -7,7 +7,7 @@ on:
 jobs:
   build-linux:
     name: upload linux to itch
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v3
@@ -175,7 +175,7 @@ jobs:
         id: runcmd
         with:
           arch: aarch64
-          distro: stretch
+          distro: bullseye
           setup: |
             mkdir -p "${PWD}/artifacts"
 
