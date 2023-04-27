@@ -299,7 +299,7 @@ jobs:
             
           run: |
             source "$HOME/.cargo/env"
-            cargo build --release
+            cargo build --release --features bevy/wayland
             cp target/release/experiment /artifacts/linux_gnu_aarch64
       - name: upload to itch.io
         uses: manleydev/butler-publish-itchio-action@master
@@ -324,7 +324,7 @@ jobs:
           run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
   
         - name: build x86 release
-          run: cargo build --release
+          run: cargo build --release --features bevy/wayland
   
         - name: rename file
           run: mv target/release/experiment ./linux_gnu_x86
