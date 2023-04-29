@@ -23,8 +23,7 @@ pub struct SpriteAnimation {
     /// total number of frames
     pub frames: Frames,
 
-    /// the row in a spritesheet for this animation
-    pub row: usize,
+    pub start_index: usize,
 
     pub looped: bool,
 
@@ -33,13 +32,13 @@ pub struct SpriteAnimation {
 }
 
 impl SpriteAnimation {
-    pub fn new(frames: Frames, row: usize, looped: bool) -> Self {
+    pub fn new(frames: Frames, start_index: usize, looped: bool) -> Self {
         Self {
             current_index: 0,
             timer: Self::timer_for_frame(0, &frames),
             frames,
-            row,
             looped,
+            start_index,
         }
     }
 
@@ -89,6 +88,6 @@ fn animate_sprites(
 ) {
     for (mut anim, mut atlas) in query.iter_mut() {
         anim.advance_index(time.delta());
-        atlas.index = anim.index()
+        atlas.index = anim.index() + anim.start_index
     }
 }

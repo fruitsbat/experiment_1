@@ -45,10 +45,10 @@ impl Player {
         -12.
     }
     pub const fn speed() -> f32 {
-        8.
+        6.
     }
     pub const fn acceleration() -> f32 {
-        1.
+        6.
     }
     pub const fn air_acceleration() -> f32 {
         0.5
@@ -62,6 +62,9 @@ impl Player {
     pub const fn jump_downforce() -> f32 {
         -1.
     }
+    pub const fn fall_acceleration() -> f32 {
+        2.
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Resource, Eq)]
@@ -74,6 +77,19 @@ pub enum State {
     Stopping,
 }
 
+impl State {
+    pub fn sprite_animation(&self) -> SpriteAnimation {
+        match self {
+            Self::Idle => SpriteAnimation::new(Frames::Constant(2, 0.5), 7, true),
+            Self::Moving => SpriteAnimation::new(Frames::Constant(5, 0.1), 2, true),
+            Self::Jumping => SpriteAnimation::new(Frames::Constant(2, 0.24), 0, true),
+            Self::Falling => SpriteAnimation::new(Frames::Constant(2, 0.24), 9, true),
+            Self::Landing => SpriteAnimation::new(Frames::Constant(1, 0.5), 14, false),
+            Self::Stopping => SpriteAnimation::new(Frames::Constant(1, 0.5), 15, false),
+        }
+    }
+}
+
 impl Default for State {
     fn default() -> Self {
         // idle is a neutral state
@@ -81,7 +97,10 @@ impl Default for State {
     }
 }
 
-fn enter_state(mut event: EventReader<State>, mut query: Query<&mut Player>) {
+fn enter_state(
+    mut event: EventReader<State>,
+    mut query: Query<(&mut Player, &mut SpriteAnimation)>,
+) {
     if event.is_empty() {
         return;
     }
@@ -94,10 +113,12 @@ fn enter_state(mut event: EventReader<State>, mut query: Query<&mut Player>) {
         .unwrap_or(&&State::default())
         .clone();
 
-    for mut player in query.iter_mut() {
+    for (mut player, mut animation) in query.iter_mut() {
         if state == player.state {
             break;
         }
+
+        *animation = state.sprite_animation();
 
         info!("state changed: {:?}", state);
         // do something when entering new state
@@ -108,7 +129,7 @@ fn enter_state(mut event: EventReader<State>, mut query: Query<&mut Player>) {
         };
     }
 
-    for mut player in query.iter_mut() {
+    for (mut player, _) in query.iter_mut() {
         player.state = state.clone();
     }
 }
@@ -126,7 +147,7 @@ fn set_input_direction(mut query: Query<(&ActionState<input::PlayerAction>, &mut
         let axis_pair = actions
             .axis_pair(input::PlayerAction::Move)
             .expect("failed to read axis pair for player!");
-        player.input_direction = axis_pair.into();
+        player.input_direction = Vec2::new(axis_pair.x().round(), axis_pair.y().round());
     }
 }
 
@@ -200,15 +221,8 @@ fn switch_states(
 }
 
 /// what to do every frame for each state
-fn move_around(
-    mut query: Query<(
-        &mut Player,
-        &ActionState<input::PlayerAction>,
-        &KinematicCharacterControllerOutput,
-    )>,
-    time: Res<Time>,
-) {
-    for (mut player, actions, controller) in query.iter_mut() {
+fn move_around(mut query: Query<&mut Player>, time: Res<Time>) {
+    for mut player in query.iter_mut() {
         match player.state {
             State::Moving => {
                 player.velocity.x = player.velocity.x.lerp(
@@ -246,7 +260,7 @@ fn apply_gravity(mut players: Query<&mut Player>, time: Res<Time>) {
     for mut player in players.iter_mut() {
         player.velocity.y = player.velocity.y.lerp(
             &Player::gravity(),
-            &(time.delta_seconds() * Player::acceleration()),
+            &(time.delta_seconds() * Player::fall_acceleration()),
         );
     }
 }
@@ -255,7 +269,12 @@ fn flip_sprite(mut query: Query<(&Player, &mut TextureAtlasSprite)>) {
     for (player, mut sprite) in query.iter_mut() {
         match player.state {
             State::Idle => (),
-            _ => sprite.flip_x = player.input_direction.x > 0.,
+            _ => {
+                if player.velocity.x == 0. {
+                    return;
+                }
+                sprite.flip_x = player.velocity.x > 0.;
+            }
         }
     }
 }
@@ -277,8 +296,8 @@ fn init_player(
     let atlas = TextureAtlas::from_grid(
         image,
         Vec2::new(32., 32.),
-        5,
-        1,
+        16,
+        2,
         Some(Vec2::splat(1.)),
         None,
     );
@@ -286,7 +305,7 @@ fn init_player(
     commands
         .spawn((
             Name::new("player"),
-            SpriteAnimation::new(Frames::Constant(2, 0.1), 2, true),
+            SpriteAnimation::new(Frames::Constant(2, 0.1), 7, true),
             Collider::capsule_y(10.0, 4.0),
             TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)),
             KinematicCharacterController {
