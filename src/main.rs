@@ -63,7 +63,7 @@ fn setup_physics(mut commands: Commands) {
         TransformBundle::from(Transform::from_xyz(-550.0, -250.0, 0.0)),
     ));
 
-    for i in 0..200 {
+    for i in 0..0 {
         commands.spawn((
             Ball,
             ExternalImpulse::default(),

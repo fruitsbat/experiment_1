@@ -11,13 +11,16 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<StateChanged>()
+        app.add_event::<State>()
             .add_system(kick_objects)
             .add_startup_system(init_player)
             .add_systems(
                 (
+                    check_velocity,
                     enter_state,
+                    set_can_jump,
                     set_input_direction,
+                    switch_states,
                     move_around,
                     apply_gravity,
                     flip_sprite,
@@ -33,6 +36,8 @@ pub struct Player {
     pub input_direction: Vec2,
     pub velocity: Vec2,
     pub state: State,
+    pub just_on_floor: bool,
+    pub can_jump: bool,
 }
 
 impl Player {
@@ -40,23 +45,26 @@ impl Player {
         -12.
     }
     pub const fn speed() -> f32 {
-        3.
+        8.
     }
     pub const fn acceleration() -> f32 {
-        0.6
+        1.
+    }
+    pub const fn air_acceleration() -> f32 {
+        0.5
     }
     pub const fn stopping_speed() -> f32 {
-        10.
+        6.
     }
     pub const fn jump_height() -> f32 {
-        24.
+        9.
+    }
+    pub const fn jump_downforce() -> f32 {
+        -1.
     }
 }
 
-/// event that happens when the player state changes
-pub struct StateChange(State);
-
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Resource)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Resource, Eq)]
 pub enum State {
     Idle,
     Moving,
@@ -73,19 +81,18 @@ impl Default for State {
     }
 }
 
-pub struct StateChanged(State);
-
-fn enter_state(mut event: EventReader<StateChanged>, mut query: Query<&mut Player>) {
+fn enter_state(mut event: EventReader<State>, mut query: Query<&mut Player>) {
     if event.is_empty() {
         return;
     }
 
     let state = event
         .iter()
-        .collect::<Vec<&StateChanged>>()
+        .map(|s| s.clone())
+        .collect::<Vec<State>>()
         .first()
-        .unwrap_or(&&StateChanged(State::default()))
-        .0;
+        .unwrap_or(&&State::default())
+        .clone();
 
     for mut player in query.iter_mut() {
         if state == player.state {
@@ -96,93 +103,133 @@ fn enter_state(mut event: EventReader<StateChanged>, mut query: Query<&mut Playe
         // do something when entering new state
         match state {
             State::Jumping => player.velocity.y = Player::jump_height(),
+            State::Falling => player.velocity.y = Player::jump_downforce(),
             _ => (),
         };
     }
 
     for mut player in query.iter_mut() {
-        player.state = state;
+        player.state = state.clone();
+    }
+}
+
+fn set_can_jump(mut query: Query<(&mut Player, &KinematicCharacterControllerOutput)>) {
+    for (mut player, controller) in query.iter_mut() {
+        player.can_jump = controller.grounded;
     }
 }
 
 /// determine what direction the stick is being held in
 /// and store it in the player struct
-fn set_input_direction(
-    mut query: Query<(&ActionState<input::PlayerAction>, &mut Player)>,
-    mut state_event: EventWriter<StateChanged>,
-) {
+fn set_input_direction(mut query: Query<(&ActionState<input::PlayerAction>, &mut Player)>) {
     for (actions, mut player) in query.iter_mut() {
         let axis_pair = actions
             .axis_pair(input::PlayerAction::Move)
             .expect("failed to read axis pair for player!");
+        player.input_direction = axis_pair.into();
+    }
+}
 
+fn switch_states(
+    query: Query<(
+        &Player,
+        &ActionState<input::PlayerAction>,
+        &KinematicCharacterControllerOutput,
+    )>,
+    mut state_event: EventWriter<State>,
+) {
+    for (player, actions, controller_out) in query.iter() {
+        let axis_pair = actions
+            .axis_pair(input::PlayerAction::Move)
+            .expect("failed to get movement axis");
         match player.state {
-            State::Idle => state_event.send(StateChanged(State::Moving)),
-            _ => player.input_direction = axis_pair.into(),
+            State::Idle => {
+                // jump
+                if player.can_jump && actions.just_pressed(input::PlayerAction::Jump) {
+                    state_event.send(State::Jumping);
+                    // fall if not on ground
+                } else if !controller_out.grounded {
+                    state_event.send(State::Falling);
+                    // player is moving
+                } else if axis_pair.x() != 0. {
+                    state_event.send(State::Moving);
+                } else if player.velocity.x != 0. {
+                    state_event.send(State::Stopping);
+                }
+            }
+
+            State::Stopping => {
+                if player.can_jump && actions.just_pressed(input::PlayerAction::Jump) {
+                    state_event.send(State::Jumping);
+                } else if player.input_direction.x != 0. {
+                    state_event.send(State::Moving);
+                } else if (player.velocity.x == 0.) && controller_out.grounded {
+                    state_event.send(State::Idle);
+                }
+            }
+
+            State::Falling => {
+                if controller_out.grounded {
+                    state_event.send(State::Landing);
+                }
+            }
+
+            State::Jumping => {
+                if player.velocity.y <= 0. || actions.just_released(input::PlayerAction::Jump) {
+                    state_event.send(State::Falling);
+                }
+            }
+
+            State::Landing => {
+                if player.input_direction.x != 0. {
+                    state_event.send(State::Moving);
+                }
+                // TODO add timer for how long landing takes
+                state_event.send(State::Idle);
+            }
+
+            State::Moving => {
+                if player.can_jump && actions.just_pressed(input::PlayerAction::Jump) {
+                    state_event.send(State::Jumping);
+                } else if player.input_direction.x == 0. {
+                    state_event.send(State::Stopping);
+                }
+            }
         }
     }
 }
 
 /// what to do every frame for each state
 fn move_around(
-    mut query: Query<(&mut Player, &ActionState<input::PlayerAction>)>,
+    mut query: Query<(
+        &mut Player,
+        &ActionState<input::PlayerAction>,
+        &KinematicCharacterControllerOutput,
+    )>,
     time: Res<Time>,
-    mut state_event: EventWriter<StateChanged>,
 ) {
-    for (mut player, actions) in query.iter_mut() {
+    for (mut player, actions, controller) in query.iter_mut() {
         match player.state {
             State::Moving => {
-                if actions.just_pressed(input::PlayerAction::Jump) {
-                    state_event.send(StateChanged(State::Jumping));
-                    return;
-                }
-                // if the player is not moving switch to Stopping state
-                if player.input_direction.x == 0. {
-                    state_event.send(StateChanged(State::Stopping));
-                    return;
-                }
                 player.velocity.x = player.velocity.x.lerp(
                     &(player.input_direction.x * Player::speed()),
                     &(Player::acceleration() * time.delta_seconds()),
                 );
             }
 
+            State::Falling | State::Jumping => {}
+
             State::Stopping => {
-                if actions.just_pressed(input::PlayerAction::Jump) {
-                    state_event.send(StateChanged(State::Jumping));
-                    return;
-                }
-                // start moving again if an input direction is pressed
-                if player.input_direction.x != 0. {
-                    state_event.send(StateChanged(State::Moving));
-                    return;
-                }
-                if player.velocity.x == 0. {
-                    state_event.send(StateChanged(State::Idle));
-                    return;
-                }
                 player.velocity.x = player
                     .velocity
                     .x
-                    .lerp(&0., &(Player::stopping_speed() * time.delta_seconds()))
-            }
-
-            State::Idle => {
-                if actions.just_pressed(input::PlayerAction::Jump) {
-                    state_event.send(StateChanged(State::Jumping));
-                    return;
-                }
-                if player.input_direction.x != 0. {
-                    state_event.send(StateChanged(State::Moving));
-                    return;
+                    .lerp(&0., &(Player::stopping_speed() * time.delta_seconds()));
+                if player.velocity.x.abs() < 0.1 {
+                    player.velocity.x = 0.;
                 }
             }
 
-            State::Jumping => {
-                if player.velocity.y <= 0. {
-                    state_event.send(StateChanged(State::Falling));
-                }
-            }
+            State::Idle => (),
 
             _ => (),
         }
@@ -249,6 +296,12 @@ fn init_player(
             texture_atlas: atlas_handle,
             ..default()
         });
+}
+
+fn check_velocity(mut query: Query<(&mut Player, &KinematicCharacterControllerOutput)>) {
+    for (mut player, controller_out) in query.iter_mut() {
+        player.velocity = controller_out.effective_translation;
+    }
 }
 
 fn kick_objects(
