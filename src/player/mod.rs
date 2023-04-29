@@ -18,8 +18,7 @@ impl Plugin for PlayerPlugin {
                 (
                     enter_state,
                     set_input_direction,
-                    x_movement,
-                    jump,
+                    move_around,
                     apply_gravity,
                     flip_sprite,
                     move_and_slide,
@@ -46,18 +45,25 @@ impl Player {
     pub const fn acceleration() -> f32 {
         0.6
     }
+    pub const fn stopping_speed() -> f32 {
+        10.
+    }
+    pub const fn jump_height() -> f32 {
+        24.
+    }
 }
 
 /// event that happens when the player state changes
 pub struct StateChange(State);
 
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Resource)]
 pub enum State {
     Idle,
     Moving,
     Jumping,
     Falling,
     Landing,
+    Stopping,
 }
 
 impl Default for State {
@@ -81,7 +87,7 @@ fn enter_state(mut event: EventReader<StateChanged>, mut query: Query<&mut Playe
         .unwrap_or(&&StateChanged(State::default()))
         .0;
 
-    for player in query.iter() {
+    for mut player in query.iter_mut() {
         if state == player.state {
             break;
         }
@@ -89,6 +95,7 @@ fn enter_state(mut event: EventReader<StateChanged>, mut query: Query<&mut Playe
         info!("state changed: {:?}", state);
         // do something when entering new state
         match state {
+            State::Jumping => player.velocity.y = Player::jump_height(),
             _ => (),
         };
     }
@@ -116,19 +123,68 @@ fn set_input_direction(
     }
 }
 
-fn x_movement(mut players: Query<&mut Player>, time: Res<Time>) {
-    for mut player in players.iter_mut() {
-        player.velocity.x = player.velocity.x.lerp(
-            &(player.input_direction.x * Player::speed()),
-            &(Player::acceleration() * time.delta_seconds()),
-        );
-    }
-}
+/// what to do every frame for each state
+fn move_around(
+    mut query: Query<(&mut Player, &ActionState<input::PlayerAction>)>,
+    time: Res<Time>,
+    mut state_event: EventWriter<StateChanged>,
+) {
+    for (mut player, actions) in query.iter_mut() {
+        match player.state {
+            State::Moving => {
+                if actions.just_pressed(input::PlayerAction::Jump) {
+                    state_event.send(StateChanged(State::Jumping));
+                    return;
+                }
+                // if the player is not moving switch to Stopping state
+                if player.input_direction.x == 0. {
+                    state_event.send(StateChanged(State::Stopping));
+                    return;
+                }
+                player.velocity.x = player.velocity.x.lerp(
+                    &(player.input_direction.x * Player::speed()),
+                    &(Player::acceleration() * time.delta_seconds()),
+                );
+            }
 
-fn jump(mut query: Query<(&ActionState<input::PlayerAction>, &mut Player)>) {
-    for (actions, mut player) in query.iter_mut() {
-        if actions.just_pressed(input::PlayerAction::Jump) {
-            player.velocity.y += 24.;
+            State::Stopping => {
+                if actions.just_pressed(input::PlayerAction::Jump) {
+                    state_event.send(StateChanged(State::Jumping));
+                    return;
+                }
+                // start moving again if an input direction is pressed
+                if player.input_direction.x != 0. {
+                    state_event.send(StateChanged(State::Moving));
+                    return;
+                }
+                if player.velocity.x == 0. {
+                    state_event.send(StateChanged(State::Idle));
+                    return;
+                }
+                player.velocity.x = player
+                    .velocity
+                    .x
+                    .lerp(&0., &(Player::stopping_speed() * time.delta_seconds()))
+            }
+
+            State::Idle => {
+                if actions.just_pressed(input::PlayerAction::Jump) {
+                    state_event.send(StateChanged(State::Jumping));
+                    return;
+                }
+                if player.input_direction.x != 0. {
+                    state_event.send(StateChanged(State::Moving));
+                    return;
+                }
+            }
+
+            State::Jumping => {
+                if player.velocity.y <= 0. {
+                    state_event.send(StateChanged(State::Falling));
+                }
+            }
+
+            _ => (),
         }
     }
 }
