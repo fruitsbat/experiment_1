@@ -1,4 +1,5 @@
 use bevy::{input::common_conditions::input_toggle_active, prelude::*};
+use bevy_easings::EasingsPlugin;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
@@ -18,6 +19,7 @@ fn main() {
         )
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(32.0))
         .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(EasingsPlugin)
         .add_plugin(input::InputPlugin)
         .add_plugin(
             WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::F11)),

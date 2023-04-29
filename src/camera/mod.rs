@@ -6,9 +6,9 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(init_camera)
-            .add_system(follow_player)
-            .add_plugin(PixelCameraPlugin);
+        app.add_plugin(PixelCameraPlugin)
+            .add_startup_system(init_camera)
+            .add_system(follow_player);
     }
 }
 
@@ -16,7 +16,7 @@ impl Plugin for CameraPlugin {
 struct PlayerCam;
 
 fn init_camera(mut commands: Commands) {
-    commands.spawn((PixelCameraBundle::from_resolution(140, 140), PlayerCam));
+    commands.spawn((PixelCameraBundle::from_resolution(320, 320), PlayerCam));
 }
 
 fn follow_player(

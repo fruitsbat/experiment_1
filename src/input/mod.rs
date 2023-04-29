@@ -37,5 +37,6 @@ fn input_map() -> InputMap<PlayerAction> {
             PlayerAction::Move,
         )
         .insert(KeyCode::Space, PlayerAction::Jump)
+        .insert(GamepadButtonType::South, PlayerAction::Jump)
         .build()
 }

@@ -17,6 +17,7 @@ bevy_rapier2d = { version = "0.21", features = [
   "wasm-bindgen",
 ] }
 leafwing-input-manager = { version = "0.9" }
+bevy_easings = "0.10"
 
 [profile.dev]
 opt-level = 1
