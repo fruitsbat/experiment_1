@@ -217,7 +217,12 @@ fn move_around(
                 );
             }
 
-            State::Falling | State::Jumping => {}
+            State::Falling | State::Jumping => {
+                player.velocity.x = player.velocity.x.lerp(
+                    &(player.input_direction.x * Player::speed()),
+                    &(Player::acceleration() / 0.5 * time.delta_seconds()),
+                );
+            }
 
             State::Stopping => {
                 player.velocity.x = player
