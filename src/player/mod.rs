@@ -42,7 +42,7 @@ pub struct Player {
 
 impl Player {
     pub const fn gravity() -> f32 {
-        -12.
+        -6.
     }
     pub const fn speed() -> f32 {
         6.
@@ -259,8 +259,8 @@ fn move_around(mut query: Query<&mut Player>, time: Res<Time>) {
 fn apply_gravity(mut players: Query<&mut Player>, time: Res<Time>) {
     for mut player in players.iter_mut() {
         player.velocity.y = player.velocity.y.lerp(
-            &Player::gravity(),
-            &(time.delta_seconds() * Player::fall_acceleration()),
+            &(Player::gravity()),
+            &(Player::fall_acceleration() * time.delta_seconds()),
         );
     }
 }
@@ -324,7 +324,10 @@ fn init_player(
 
 fn check_velocity(mut query: Query<(&mut Player, &KinematicCharacterControllerOutput)>) {
     for (mut player, controller_out) in query.iter_mut() {
-        player.velocity = controller_out.effective_translation;
+        if controller_out.effective_translation.x == 0. {
+            // player.velocity.x = 0.;
+            info!("{:?}", player.velocity.x);
+        }
     }
 }
 
