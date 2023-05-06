@@ -1669,6 +1669,7 @@ dependencies = [
  "bevy_embedded_assets",
  "bevy_pixel_camera",
  "bevy_rapier2d",
+ "itertools",
  "leafwing-input-manager",
 ]
 

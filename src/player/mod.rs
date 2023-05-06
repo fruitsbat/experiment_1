@@ -1,3 +1,5 @@
+mod state;
+
 use crate::{
     animation::{Frames, SpriteAnimation},
     input,
@@ -6,6 +8,7 @@ use bevy::prelude::*;
 use bevy_easings::Lerp;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
+use state::State;
 
 pub struct PlayerPlugin;
 
@@ -17,7 +20,9 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 (
                     check_velocity,
-                    enter_state,
+                    state::set_state,
+                    state::exit,
+                    state::enter,
                     set_can_jump,
                     set_input_direction,
                     switch_states,
@@ -33,10 +38,17 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Default, Component)]
 pub struct Player {
+    /// dpad input direction
     pub input_direction: Vec2,
+    /// how much the player should move
     pub velocity: Vec2,
+    /// state that the player has now
     pub state: State,
+    /// state that the player had in the last tick
+    pub last_state: State,
+    /// touched the floor in the last frame
     pub just_on_floor: bool,
+    /// can the player jump?
     pub can_jump: bool,
 }
 
@@ -65,72 +77,10 @@ impl Player {
     pub const fn fall_acceleration() -> f32 {
         2.
     }
-}
 
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Resource, Eq)]
-pub enum State {
-    Idle,
-    Moving,
-    Jumping,
-    Falling,
-    Landing,
-    Stopping,
-}
-
-impl State {
-    pub fn sprite_animation(&self) -> SpriteAnimation {
-        match self {
-            Self::Idle => SpriteAnimation::new(Frames::Constant(2, 0.5), 7, true),
-            Self::Moving => SpriteAnimation::new(Frames::Constant(5, 0.1), 2, true),
-            Self::Jumping => SpriteAnimation::new(Frames::Constant(2, 0.24), 0, true),
-            Self::Falling => SpriteAnimation::new(Frames::Constant(2, 0.24), 9, true),
-            Self::Landing => SpriteAnimation::new(Frames::Constant(1, 0.5), 14, false),
-            Self::Stopping => SpriteAnimation::new(Frames::Constant(1, 0.5), 15, false),
-        }
-    }
-}
-
-impl Default for State {
-    fn default() -> Self {
-        // idle is a neutral state
-        Self::Idle
-    }
-}
-
-fn enter_state(
-    mut event: EventReader<State>,
-    mut query: Query<(&mut Player, &mut SpriteAnimation)>,
-) {
-    if event.is_empty() {
-        return;
-    }
-
-    let state = event
-        .iter()
-        .map(|s| s.clone())
-        .collect::<Vec<State>>()
-        .first()
-        .unwrap_or(&&State::default())
-        .clone();
-
-    for (mut player, mut animation) in query.iter_mut() {
-        if state == player.state {
-            break;
-        }
-
-        *animation = state.sprite_animation();
-
-        info!("state changed: {:?}", state);
-        // do something when entering new state
-        match state {
-            State::Jumping => player.velocity.y = Player::jump_height(),
-            State::Falling => player.velocity.y = Player::jump_downforce(),
-            _ => (),
-        };
-    }
-
-    for (mut player, _) in query.iter_mut() {
-        player.state = state.clone();
+    /// has the player state changed in the last frame
+    pub fn state_changed(&self) -> bool {
+        !(self.last_state == self.state)
     }
 }
 
@@ -324,9 +274,11 @@ fn init_player(
 
 fn check_velocity(mut query: Query<(&mut Player, &KinematicCharacterControllerOutput)>) {
     for (mut player, controller_out) in query.iter_mut() {
+        if controller_out.effective_translation.x == controller_out.desired_translation.x {
+            return;
+        }
         if controller_out.effective_translation.x == 0. {
-            // player.velocity.x = 0.;
-            info!("{:?}", player.velocity.x);
+            player.velocity.x = 0.;
         }
     }
 }
