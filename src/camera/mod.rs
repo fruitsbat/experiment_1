@@ -21,11 +21,20 @@ fn init_camera(mut commands: Commands) {
 
 fn follow_player(
     mut camera_query: Query<&mut Transform, (With<PlayerCam>, Without<Player>)>,
-    player_query: Query<&Transform, (With<Player>, Without<PlayerCam>)>,
+    player_query: Query<(&Transform, &Player), Without<PlayerCam>>,
+    time: Res<Time>,
 ) {
     for mut camera in camera_query.iter_mut() {
-        for player in player_query.iter() {
-            camera.translation = camera.translation.lerp(player.translation, 0.5);
+        for (transform, player) in player_query.iter() {
+            camera.translation = camera.translation.lerp(
+                transform.translation
+                    + Vec3 {
+                        x: player.velocity.x * 20.,
+                        y: 0.,
+                        z: 0.,
+                    },
+                10. * time.delta_seconds(),
+            );
         }
     }
 }
